@@ -54,8 +54,7 @@ class SettingsWindow(QMainWindow):
         confirm_button.clicked.connect(lambda: self.start_ruler(fields))
         central_widget.addWidget(confirm_button, 3, 0, Qt.AlignCenter)
 
-        a = QLabel("abc")
-        a.show()
+        self.auto_checkbox.click()
 
     def start_ruler(self, fields):
         if self.auto_checkbox.isChecked():
