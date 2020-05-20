@@ -20,8 +20,16 @@ class RulerWindow(QWidget):
         self.setCursor(Qt.BlankCursor)
     
     def set_sizes(self, h_res, v_res, size):
-        diagonal_res = math.sqrt(int(h_res)**2+int(v_res)**2)
-        self.ppi = diagonal_res/float(size) # Pixels per inch
+        if h_res == "auto":
+            screen = self.screen()
+            self.ppix = screen.physicalDotsPerInchX()
+            self.ppiy = screen.physicalDotsPerInchY()
+            if self.ppix != self.ppiy:
+                print("WARNING! due to the properties of your screen angles are slightly distorted and length of diagonals are approximations")
+        else:
+            diagonal_res = math.sqrt(int(h_res)**2+int(v_res)**2)
+            self.ppix = diagonal_res/float(size) # Pixels per inch
+            self.ppiy = self.ppix
     
     def paintEvent(self, event):
         painter = QPainter()
@@ -77,9 +85,9 @@ class RulerWindow(QWidget):
             y_px = abs(int((halfy-mid_point.y())*2))
             hipotenuse = abs(hipotenuse)
             inch_to_cm = 2.54
-            x_inches = x_px / self.ppi
-            y_inches = y_px / self.ppi
-            hip_inches = hipotenuse / self.ppi
+            x_inches = x_px / self.ppix
+            y_inches = y_px / self.ppiy
+            hip_inches = hipotenuse / ((self.ppiy+self.ppix)/2)
             x_cm = x_inches * inch_to_cm
             y_cm = y_inches * inch_to_cm
             hip_cm = hip_inches * inch_to_cm
