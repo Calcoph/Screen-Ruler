@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QWidget, QGridLay
 from PyQt5.QtCore import Qt, QSize, QPoint
 from PyQt5.QtGui import QFont, QPaintDevice, QPainter, QColor, QStaticText, QMouseEvent
 
+from preview import Preview
+
 # Subclass QMainWindow to customise your application's main window
 class RulerWindow(QWidget):
     def __init__(self, *args, **kwargs):
@@ -24,17 +26,24 @@ class RulerWindow(QWidget):
             screen = self.screen()
             self.ppix = screen.physicalDotsPerInchX()
             self.ppiy = screen.physicalDotsPerInchY()
+            h_res = screen.geometry().width()
+            v_res = screen.geometry().height()
             if self.ppix != self.ppiy:
                 print("WARNING! due to the properties of your screen angles are slightly distorted and length of diagonals are approximations")
         else:
             diagonal_res = math.sqrt(int(h_res)**2+int(v_res)**2)
             self.ppix = diagonal_res/float(size) # Pixels per inch
             self.ppiy = self.ppix
+
+        self.preview = Preview(h_res, v_res, self)
+        self.preview.show()
+        self.h_res, self.v_res = h_res, v_res
     
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
-        self.paint_background(painter)
+        if not self.ignored:
+            self.paint_background(painter)
         painter.setPen(QColor(255, 0, 255))
         painter.setBrush(QColor(0, 0, 0))
 
@@ -76,13 +85,14 @@ class RulerWindow(QWidget):
             top_hipotenuse_half = QPoint(halfx-x_change, halfy+y_change)
             bot_hipotenuse_half = QPoint(halfx+x_change, halfy-y_change)
 
-            painter.drawLine(top_horizontal_half, bot_horizontal_half)
-            painter.drawLine(left_vertical_half, right_vertical_half)
-            painter.drawLine(top_hipotenuse_half, bot_hipotenuse_half)
+            if hipotenuse >= 20 and moving: # To not be in the way while looking for a second point
+                painter.drawLine(top_horizontal_half, bot_horizontal_half)
+                painter.drawLine(left_vertical_half, right_vertical_half)
+                painter.drawLine(top_hipotenuse_half, bot_hipotenuse_half)
 
             painter.setPen(QColor(255, 255, 255))
-            x_px = abs(int((halfx-i.x())*2))
-            y_px = abs(int((halfy-mid_point.y())*2))
+            x_px = abs(int((halfx-i.x())*2)) + 1
+            y_px = abs(int((halfy-mid_point.y())*2)) + 1
             hipotenuse = abs(hipotenuse)
             inch_to_cm = 2.54
             x_inches = x_px / self.ppix
@@ -95,11 +105,11 @@ class RulerWindow(QWidget):
             y_text = str(y_px) + "px | " + f"{y_cm:7.2f}" + "cm | " + f"{y_inches:7.2f}" + "inch"
             hip_text = f"{abs(hipotenuse):7.2f}" + "px | " + f"{hip_cm:7.2f}" + "cm | " + f"{hip_inches:7.2f}" + "inch"
             # in 7.2f -> 7 = max char, 2 = max floating point precision
-            if moving:
+            if moving and hipotenuse >= 20: # To not be in the way while looking for a second point
                 painter.drawText(QPoint(halfx, i.y()), x_text)
                 painter.drawText(QPoint(end_point.x(), halfy), y_text)
                 painter.drawText(QPoint(halfx, halfy-12), hip_text) # 7 = max char, 2 = max floating point precision
-            else:
+            elif not moving:
                 # drawStaticText is more optimized if it rarely updates
                 painter.drawStaticText(QPoint(halfx, i.y()), QStaticText(x_text))
                 painter.drawStaticText(QPoint(end_point.x(), halfy), QStaticText(y_text))
@@ -109,15 +119,21 @@ class RulerWindow(QWidget):
         for i in self.final_dots:
             painter.drawRect(i.x()-1, i.y()-1, 2, 2)
 
-        if not self.ignored:
-            self.paint_cursor(painter)
+        """if not self.ignored:
+            self.paint_cursor(painter)"""
         painter.end()
         
     def paint_background(self, painter):
-        painter.setBrush(QColor(0, 0, 0, 35)) # Semitransparent brush
-        painter.drawRect(0, 0, 1920, 1080)
-    
-    def paint_cursor(self, painter, length=10):
+        painter.setBrush(QColor(0, 0, 0, 120)) # Semitransparent brush
+        painter.setPen(Qt.NoPen)
+        corners = self.preview.corners
+        painter.drawRect(0, 0, corners[0][0], self.v_res)
+        painter.drawRect(corners[0][0], 0, corners[1][0]-corners[0][0], corners[0][1])
+        painter.drawRect(corners[0][0], corners[1][1], corners[1][0]-corners[0][0], self.v_res - corners[1][1])
+        painter.drawRect(corners[1][0], 0, self.h_res - corners[1][0], self.v_res)
+        painter.setBrush(QColor(0, 0, 0, 1)) # Almost transparent brush, just so there is something there
+        painter.drawRect(corners[0][0], corners[0][1], corners[1][0]-corners[0][0], corners[1][1]-corners[0][1])
+    """def paint_cursor(self, painter, length=10):
         painter.setPen(QColor(255, 255, 255)) # It mustn't be monochrome so subpixels don't mess precision up
         x, y = self.cursor().pos().x(), self.cursor().pos().y()
         top_dot = QPoint(x, y+length)
@@ -125,7 +141,7 @@ class RulerWindow(QWidget):
         left_dot = QPoint(x-length, y)
         right_dot = QPoint(x+length, y)
         painter.drawLine(top_dot, bot_dot)
-        painter.drawLine(right_dot, left_dot)
+        painter.drawLine(right_dot, left_dot)"""
 
     def mousePressEvent(self, event):
         if len(self.initial_dots) == len(self.final_dots):
@@ -133,6 +149,7 @@ class RulerWindow(QWidget):
         else:
             self.final_dots.append(event.pos())
         self.repaint()
+        self.preview.repaint()
 
     def mouseDoubleClickEvent(self, event):
         self.final_dots = []
@@ -140,7 +157,9 @@ class RulerWindow(QWidget):
         self.repaint()
 
     def mouseMoveEvent(self, event):
+        self.preview.update_pos()
         self.repaint()
+        
     
     def keyPressEvent(self, event):
         key = event.key()
@@ -162,6 +181,7 @@ class RulerWindow(QWidget):
         elif key == 16777220: # Enter key
             # Simulate click
             self.mousePressEvent(self.cursor())
+        self.preview.repaint()
 
     def ignore_input(self, ignore=True):
         self.ignored = ignore
@@ -173,7 +193,9 @@ class RulerWindow(QWidget):
         self.showFullScreen()
         if ignore:
             cursor = Qt.ArrowCursor
+            self.preview.hide()
         else:
+            self.preview.show()
             cursor = Qt.BlankCursor
         self.setCursor(cursor)
 
