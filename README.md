@@ -35,7 +35,7 @@ You can precisely move the cursor by 1 pixel with the arrow keys and click with 
 Make sure that all measurements match up with a physical ruler, if all measurements are good, you can leave it in auto.
 If they are not correct, you will have to uncheck auto and enter the screen parameters manually yourself.
 
-There is a high chance that once you start the program a warning about accuracy appears, you should not worry about it, as the inacuraccy is insignificant.
+There is a high chance that once you start the program a warning about accuracy appears, you should not worry about it, as the inacuraccy is insignificant. You can see it by making a big square, for example in my screen a 1079x1079px square measures 28,60x28,57cm
 
 You can press P to convert the program into an overlay, so you can use your computer as normal with the triangles on top.
 To go back to the ruler you have to click on it on the task bar (or with alt+tab), then press P again.
