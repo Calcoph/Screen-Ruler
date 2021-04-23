@@ -1,6 +1,7 @@
 import math
+import time
 
-from PIL import ImageGrab
+from PIL import ImageGrab, ImageStat
 
 from PyQt5.QtCore import QLineF, QSize, Qt
 from PyQt5.QtWidgets import QWidget
@@ -78,26 +79,29 @@ class Preview(QWidget):
         painter.drawLines(h_lines)
 
         # Paint zoomed pixels
-        pixels = ImageGrab.grab(bbox=(self.corners[0][0],
+        img = ImageGrab.grab(bbox=(self.corners[0][0],
                                       self.corners[0][1],
-                                      self.corners[1][0]+1,
-                                      self.corners[1][1]+1)).load()
+                                      self.corners[1][0],
+                                      self.corners[1][1]))
+        pixels = img.load()
+        average = ImageStat.Stat(img).mean
         for row in range(self.M_SIZE[1]):
-            for pixel in range(self.M_SIZE[0]):
-                color = QColor(*pixels[pixel, row])
+            for col in range(self.M_SIZE[0]):
+                color = QColor(*pixels[col, row])
                 
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(color)
-                painter.drawRect(1 + pixel * self.pixel_size + pixel * self.grid_thickness,
+                painter.drawRect(1 + col * self.pixel_size + col * self.grid_thickness,
                                  1 + row * self.pixel_size + row * self.grid_thickness,
                                  self.pixel_size, self.pixel_size)
 
-                if (row == math.floor(self.M_SIZE[1]/2)
-                    or pixel == math.floor(self.M_SIZE[0]/2)):
-                        color = QColor(200, 200, 255, 50)
+                if (row == self.y-self.corners[0][1]
+                    or col == self.x-self.corners[0][0]):
+                        pixel = ((255 - average[0]), (255 - average[1]), (255 - average[2]), 120)
+                        color = QColor(*pixel)
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(color)
-                painter.drawRect(1 + pixel * self.pixel_size + pixel * self.grid_thickness,
+                painter.drawRect(1 + col * self.pixel_size + col * self.grid_thickness,
                                  1 + row * self.pixel_size + row * self.grid_thickness,
                                  self.pixel_size, self.pixel_size)
 
@@ -130,5 +134,8 @@ def get_corners_coords(x, y, h_res, v_res, size):
     else:
         corners[0][1] = 0
         corners[1][1] = size[1] - 1
+    
+    corners[1][0] += 1
+    corners[1][1] += 1
     
     return corners

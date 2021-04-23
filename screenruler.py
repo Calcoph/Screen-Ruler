@@ -1,9 +1,10 @@
 import sys
 import math
+import time
 
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QWidget, QGridLayout
-from PyQt5.QtCore import Qt, QSize, QPoint
-from PyQt5.QtGui import QFont, QPaintDevice, QPainter, QColor, QStaticText, QMouseEvent
+from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtCore import QRect, Qt, QPoint
+from PyQt5.QtGui import QPainter, QColor, QStaticText
 
 from preview import Preview
 
@@ -127,21 +128,60 @@ class RulerWindow(QWidget):
         painter.setBrush(QColor(0, 0, 0, 120)) # Semitransparent brush
         painter.setPen(Qt.NoPen)
         corners = self.preview.corners
-        painter.drawRect(0, 0, corners[0][0], self.v_res)
-        painter.drawRect(corners[0][0], 0, corners[1][0]-corners[0][0], corners[0][1])
-        painter.drawRect(corners[0][0], corners[1][1], corners[1][0]-corners[0][0], self.v_res - corners[1][1])
-        painter.drawRect(corners[1][0], 0, self.h_res - corners[1][0], self.v_res)
+
+        # drawRect(left margin, top margin, width, height)
+        # corners[0] = top left corner
+        # corners[1] = bot right corner
+        # corners[][0] = x component
+        # corners[][1] = y component
+
+        # black rectangle
+        # topleft corner =  (screen left, screen top)
+        # botright corner = (preview left, screen bottom)
+        painter.drawRect(0,
+                         0,
+                         corners[0][0],
+                         self.v_res
+        )
+        # black rectangle
+        # topleft corner =  (preview left, screen top)
+        # botright corner = (preview right, preview top)
+        painter.drawRect(corners[0][0],
+                         0,
+                         corners[1][0]-corners[0][0],
+                         corners[0][1]
+        )
+        # black rectangle
+        # topleft corner =  (preview left, preview bottom)
+        # botright corner = (preview right, screen bottom)
+        painter.drawRect(corners[0][0],
+                         corners[1][1],
+                         corners[1][0]-corners[0][0],
+                         self.v_res - corners[1][1]
+        )
+        # black rectangle
+        # topleft corner =  (preview right, screen top)
+        # botright corner = (preview right, screen bot)
+        painter.drawRect(corners[1][0],
+                         0,
+                         self.h_res - corners[1][0],
+                         self.v_res
+        )
         painter.setBrush(QColor(0, 0, 0, 1)) # Almost transparent brush, just so there is something there
-        painter.drawRect(corners[0][0], corners[0][1], corners[1][0]-corners[0][0], corners[1][1]-corners[0][1])
-    """def paint_cursor(self, painter, length=10):
-        painter.setPen(QColor(255, 255, 255)) # It mustn't be monochrome so subpixels don't mess precision up
-        x, y = self.cursor().pos().x(), self.cursor().pos().y()
-        top_dot = QPoint(x, y+length)
-        bot_dot = QPoint(x, y-length)
-        left_dot = QPoint(x-length, y)
-        right_dot = QPoint(x+length, y)
-        painter.drawLine(top_dot, bot_dot)
-        painter.drawLine(right_dot, left_dot)"""
+        # transparent rectangle
+        # topleft corner =  (preview left, preview top)
+        # botright corner = (preview right, preview bottom)
+        painter.drawRect(corners[0][0],
+                         corners[0][1],
+                         corners[1][0]-corners[0][0],
+                         corners[1][1]-corners[0][1]
+        )
+        """painter.setBrush(QColor(255, 255, 255, 255))
+        painter.drawRect(corners[0][0]+10, # 1 white dot where the cursor is
+                         corners[0][1]+10,
+                         1,
+                         1
+        )"""
 
     def mousePressEvent(self, event):
         if len(self.initial_dots) == len(self.final_dots):
@@ -159,6 +199,7 @@ class RulerWindow(QWidget):
     def mouseMoveEvent(self, event):
         self.preview.update_pos()
         self.repaint()
+        self.preview.update()
         
     
     def keyPressEvent(self, event):
