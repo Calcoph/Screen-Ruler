@@ -4,7 +4,7 @@ import time
 
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtCore import QRect, Qt, QPoint
-from PyQt5.QtGui import QPainter, QColor, QStaticText
+from PyQt5.QtGui import QIcon, QPainter, QColor, QStaticText
 
 from preview import Preview
 
@@ -13,6 +13,7 @@ class RulerWindow(QWidget):
     def __init__(self, *args, **kwargs):
         super(RulerWindow, self).__init__(*args, **kwargs)
         self.setWindowTitle("Screen Ruler")
+        self.setWindowIcon(QIcon("ruler.ico"))
         self.initial_dots = []
         self.final_dots = []
 
@@ -29,8 +30,8 @@ class RulerWindow(QWidget):
             self.ppiy = screen.physicalDotsPerInchY()
             h_res = screen.geometry().width()
             v_res = screen.geometry().height()
-            if self.ppix != self.ppiy:
-                print("WARNING! due to the properties of your screen angles are slightly distorted and length of diagonals are approximations")
+            #if self.ppix != self.ppiy:
+            #    print("WARNING! due to the properties of your screen angles are slightly distorted and length of diagonals are approximations")
         else:
             diagonal_res = math.sqrt(int(h_res)**2+int(v_res)**2)
             self.ppix = diagonal_res/float(size) # Pixels per inch
@@ -167,14 +168,15 @@ class RulerWindow(QWidget):
                          self.h_res - corners[1][0],
                          self.v_res
         )
+        painter.setPen(QColor(255, 255, 255))
         painter.setBrush(QColor(0, 0, 0, 1)) # Almost transparent brush, just so there is something there
-        # transparent rectangle
+        # transparent rectangle iwth blue border
         # topleft corner =  (preview left, preview top)
         # botright corner = (preview right, preview bottom)
-        painter.drawRect(corners[0][0],
-                         corners[0][1],
-                         corners[1][0]-corners[0][0],
-                         corners[1][1]-corners[0][1]
+        painter.drawRect(corners[0][0]-1,
+                         corners[0][1]-1,
+                         corners[1][0]-corners[0][0]+1,
+                         corners[1][1]-corners[0][1]+1
         )
         """painter.setBrush(QColor(255, 255, 255, 255))
         painter.drawRect(corners[0][0]+10, # 1 white dot where the cursor is

@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QLineEdit, QPushButton, QCheckBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QFont, QIcon
 
 from screenruler import RulerWindow
 
@@ -12,6 +12,8 @@ class SettingsWindow(QMainWindow):
         self.ruler = ruler
 
         self.setWindowTitle("Screen Ruler")
+        app_icon = QIcon("ruler.ico")
+        self.setWindowIcon(app_icon)
 
         central_widget = CentralWidget()
         self.setCentralWidget(central_widget)
