@@ -3,8 +3,8 @@ import math
 import time
 
 from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5.QtCore import QRect, Qt, QPoint
-from PyQt5.QtGui import QIcon, QPainter, QColor, QStaticText
+from PyQt5.QtCore import QRect, QSize, Qt, QPoint
+from PyQt5.QtGui import QBitmap, QCursor, QIcon, QPainter, QColor, QPixmap, QStaticText
 
 from preview import Preview
 
@@ -21,7 +21,9 @@ class RulerWindow(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.ignored = False
         self.setMouseTracking(True)
-        self.setCursor(Qt.BlankCursor)
+        self.custom_cursor = self.generate_custom_cursor()
+        #self.setCursor(Qt.BlankCursor)
+        self.setCursor(self.custom_cursor)
     
     def set_sizes(self, h_res, v_res, size):
         if h_res == "auto":
@@ -128,7 +130,7 @@ class RulerWindow(QWidget):
     def paint_background(self, painter):
         painter.setBrush(QColor(0, 0, 0, 120)) # Semitransparent brush
         painter.setPen(Qt.NoPen)
-        corners = self.preview.corners
+        corners = self.preview.screen_corners
 
         # drawRect(left margin, top margin, width, height)
         # corners[0] = top left corner
@@ -168,9 +170,9 @@ class RulerWindow(QWidget):
                          self.h_res - corners[1][0],
                          self.v_res
         )
-        painter.setPen(QColor(255, 255, 255))
+        painter.setPen(QColor(255, 255, 255, 1)) # Almost transparent brush, just so there is something there
         painter.setBrush(QColor(0, 0, 0, 1)) # Almost transparent brush, just so there is something there
-        # transparent rectangle iwth blue border
+        # transparent rectangle with blue border
         # topleft corner =  (preview left, preview top)
         # botright corner = (preview right, preview bottom)
         painter.drawRect(corners[0][0]-1,
@@ -191,19 +193,19 @@ class RulerWindow(QWidget):
         else:
             self.final_dots.append(event.pos())
         self.repaint()
-        self.preview.repaint()
+        self.preview.update()
 
     def mouseDoubleClickEvent(self, event):
         self.final_dots = []
         self.initial_dots = []
-        self.repaint()
+        self.update()
+        self.preview.update()
 
     def mouseMoveEvent(self, event):
         self.preview.update_pos()
         self.repaint()
         self.preview.update()
-        
-    
+            
     def keyPressEvent(self, event):
         key = event.key()
         if key in [16777234, 16777235, 16777236, 16777237]: # Arrows
@@ -241,6 +243,23 @@ class RulerWindow(QWidget):
             self.preview.show()
             cursor = Qt.BlankCursor
         self.setCursor(cursor)
+
+    def generate_custom_cursor(self):
+        print(QPixmap.defaultDepth())
+        bitmap = QPixmap(QSize(32, 32))
+        mask = QPixmap(QSize(32, 32))
+        bitmap.fill(QColor("#ffffff"))
+        mask.fill(QColor("#ffffff"))
+
+        x, y = Preview.M_SIZE
+        painter = QPainter(bitmap)
+        painter.setPen(QColor("#000000"))
+        painter.drawRect(0, 0, x+2, y+2)
+        painter.drawLine(x/2+2, 1, x/2+2, y+1)
+        painter.drawLine(1, y/2+2, x+1, y/2+2)
+        painter.end()
+
+        return QCursor(QBitmap(bitmap), QBitmap(mask),(x+2)/2, (y+2)/2)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

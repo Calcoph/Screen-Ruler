@@ -35,7 +35,8 @@ class Preview(QWidget):
     
     def update_pos(self):
         self.x, self.y = self.cursor().pos().x(), self.cursor().pos().y()
-        self.corners = get_corners_coords(self.x, self.y, self.h_res, self.v_res, self.M_SIZE)
+        self.true_corners = get_corners_coords(self.x, self.y, self.h_res, self.v_res, self.M_SIZE)
+        self.screen_corners = get_corners_coords(self.x % self.h_res, self.y % self.v_res, self.h_res, self.v_res, self.M_SIZE)
 
     def paintEvent(self, event):
         if self.x >= self.h_res/2:
@@ -79,10 +80,11 @@ class Preview(QWidget):
         painter.drawLines(h_lines)
 
         # Paint zoomed pixels
-        img = ImageGrab.grab(bbox=(self.corners[0][0],
-                                      self.corners[0][1],
-                                      self.corners[1][0],
-                                      self.corners[1][1]))
+        img = ImageGrab.grab(bbox=(self.true_corners[0][0],
+                                      self.true_corners[0][1],
+                                      self.true_corners[1][0],
+                                      self.true_corners[1][1]),
+                            all_screens=True)
         pixels = img.load()
         average = ImageStat.Stat(img).mean
         for row in range(self.M_SIZE[1]):
@@ -95,8 +97,8 @@ class Preview(QWidget):
                                  1 + row * self.pixel_size + row * self.grid_thickness,
                                  self.pixel_size, self.pixel_size)
 
-                if (row == self.y-self.corners[0][1]
-                    or col == self.x-self.corners[0][0]):
+                if (row == self.y-self.true_corners[0][1]
+                    or col == self.x-self.true_corners[0][0]):
                         pixel = ((255 - average[0]), (255 - average[1]), (255 - average[2]), 120)
                         color = QColor(*pixel)
                 painter.setPen(Qt.NoPen)
@@ -105,35 +107,49 @@ class Preview(QWidget):
                                  1 + row * self.pixel_size + row * self.grid_thickness,
                                  self.pixel_size, self.pixel_size)
 
-
 def get_corners_coords(x, y, h_res, v_res, size):
+    monitorx, monitory = 0, 0
+    low_h, low_v, high_h, high_v = 0, 0, h_res, v_res
+    temp_x = x
+    while temp_x > h_res:
+        temp_x -= h_res
+        monitorx += 1
+    high_h += monitorx * h_res
+    low_h += monitorx * h_res
+    temp_y = y
+    while temp_y > v_res:
+        temp_y -= v_res
+        monitory += 1
+    high_v += monitory * v_res
+    low_v += monitory * v_res
+
     corners = [[0, 0], [h_res, v_res]]
     x_increment = (size[0] - 1)/2
     y_increment = (size[1] - 1)/2
     h_res -= 1
     v_res -= 1
 
-    if x - x_increment > 0:
+    if x - x_increment > low_h:
         corners[0][0] = x - x_increment
-        if x + x_increment < h_res:
+        if x + x_increment < high_h:
             corners[1][0] = x + x_increment
         else:
-            corners[1][0] = h_res
-            corners[0][0] = h_res - size[0] + 1
+            corners[1][0] = high_h
+            corners[0][0] = high_h - size[0] + 1
     else:
-        corners[0][0] = 0
-        corners[1][0] = size[0] - 1
+        corners[0][0] = low_h
+        corners[1][0] = low_h + size[0] - 1
 
-    if y - y_increment > 0:
+    if y - y_increment > low_v:
         corners[0][1] = y - y_increment
-        if y + y_increment < v_res:
+        if y + y_increment < high_v:
             corners[1][1] = y + y_increment
         else:
-            corners[1][1] = v_res
-            corners[0][1] = v_res - size[1] + 1
+            corners[1][1] = high_v
+            corners[0][1] = high_v - size[1] + 1
     else:
-        corners[0][1] = 0
-        corners[1][1] = size[1] - 1
+        corners[0][1] = low_v
+        corners[1][1] = low_v + size[1] - 1
     
     corners[1][0] += 1
     corners[1][1] += 1

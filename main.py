@@ -1,3 +1,4 @@
+#pyinstaller main.py -n screenruler -w -i ruler.ico
 import sys
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QGridLayout, QWidget, QLineEdit, QPushButton, QCheckBox
 from PyQt5.QtCore import QSize, Qt
