@@ -1,6 +1,6 @@
 # Screen-Ruler
 Measure distances between pixels on your screen.
-![sample image](https://github.com/calcoph/screen-ruler/blob/main/working_example.png)
+![sample image](https://github.com/calcoph/screen-ruler/blob/master/sample_images/working_example.png)
 # Usage
 Once you have started the application some parameters will be asked. You should just leave "auto" checked and click confirm.
 
